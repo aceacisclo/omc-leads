@@ -150,9 +150,117 @@ export const LeadTable: React.FC = () => {
     </th>
   );
 
+  const ActionButtons: React.FC<{ lead: Lead }> = ({ lead }) => (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={(e) => { e.stopPropagation(); openDetail(lead); }}
+        className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+        title="Ver detalle"
+      >
+        <Eye size={15} />
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); openForm(lead); }}
+        className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+        title="Editar"
+      >
+        <Pencil size={15} />
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); setDeleteTarget(lead); }}
+        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+        title="Eliminar"
+      >
+        <Trash2 size={15} />
+      </button>
+    </div>
+  );
+
+  const Pagination = () =>
+    totalPages > 1 ? (
+      <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50 gap-2">
+        <p className="text-xs text-gray-500 shrink-0">
+          {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)}{' '}
+          <span className="hidden sm:inline">de {filtered.length} leads</span>
+        </p>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-2.5 py-1 text-xs border border-gray-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            ‹ Anterior
+          </button>
+          {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+            const start = Math.max(1, Math.min(currentPage - 1, totalPages - 2));
+            const p = start + i;
+            return (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className={`px-2.5 py-1 text-xs border rounded-lg transition hidden sm:block ${
+                  p === currentPage
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'border-gray-200 hover:bg-white'
+                }`}
+              >
+                {p}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-2.5 py-1 text-xs border border-gray-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Siguiente ›
+          </button>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {paginated.map((lead) => {
+          const sourceLabel = SOURCES.find((s) => s.value === lead.fuente)?.label ?? lead.fuente;
+          return (
+            <div
+              key={lead.id}
+              className="bg-white rounded-xl border border-gray-200 p-4 cursor-pointer active:bg-gray-50 transition-colors"
+              onClick={() => openDetail(lead)}
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{lead.nombre}</p>
+                  <p className="text-xs text-gray-400 truncate">{lead.email}</p>
+                </div>
+                <SourceBadge source={lead.fuente} label={sourceLabel} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  {lead.presupuesto !== undefined && (
+                    <span className="font-medium text-gray-600">
+                      ${lead.presupuesto.toLocaleString('es-CO')}
+                    </span>
+                  )}
+                  <span>{format(parseISO(lead.fecha_creacion), 'd MMM yyyy', { locale: es })}</span>
+                </div>
+                <ActionButtons lead={lead} />
+              </div>
+            </div>
+          );
+        })}
+        {totalPages > 1 && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <Pagination />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
@@ -219,29 +327,7 @@ export const LeadTable: React.FC = () => {
                       className="px-4 py-3 text-right"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openDetail(lead)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                          title="Ver detalle"
-                        >
-                          <Eye size={15} />
-                        </button>
-                        <button
-                          onClick={() => openForm(lead)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(lead)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
+                      <ActionButtons lead={lead} />
                     </td>
                   </tr>
                 );
@@ -249,49 +335,7 @@ export const LeadTable: React.FC = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
-            <p className="text-xs text-gray-500">
-              Mostrando {(currentPage - 1) * pageSize + 1}–
-              {Math.min(currentPage * pageSize, filtered.length)} de {filtered.length} leads
-            </p>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="px-2 py-1 text-xs border border-gray-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                Anterior
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
-                const page = start + i;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-2.5 py-1 text-xs border rounded-lg transition ${
-                      page === currentPage
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'border-gray-200 hover:bg-white'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="px-2 py-1 text-xs border border-gray-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination />
       </div>
 
       <ConfirmDialog
