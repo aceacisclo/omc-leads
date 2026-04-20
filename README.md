@@ -30,7 +30,6 @@ npm install
 npm run dev
 ```
 
-La app corre en `http://localhost:5173`
 
 ## Estructura del proyecto
 
